@@ -72,16 +72,33 @@ def get_code(request):
                 print('mail_from --> ', mail_from)
                 hasTiktok = 'tiktok' in mail_from
                 hasIns = 'instagram' in mail_from
-                if hasTiktok or hasIns:
+                decoded = outlook_services.mailbody()
+                code = re.compile(r'\d{6}', re.S).findall(str(decoded))[0]
+                mail_date = outlook_services.maildate()
+                model = OutlookMail.objects.all().filter(mail=mail)
+                model.update(flag=1, app=app)
+                return JsonResponse({'hasUnread': hasUnread, 'code': code, 'mail_date': mail_date}, status=status.HTTP_200_OK)
+            # 没有未读邮件
+            else:
+                junk = outlook_services.select('Junk')
+                junkHasUnread = outlook_services.hasUnread()
+                if junkHasUnread:
+                    latest_unread_mail = outlook_services.unread()
+                    print('hasUnread --> ', hasUnread)
+                    mail_from = outlook_services.mailfrom()
+                    print('mail_from --> ', mail_from)
+                    hasTiktok = 'tiktok' in mail_from
+                    hasIns = 'instagram' in mail_from
                     decoded = outlook_services.mailbody()
                     code = re.compile(r'\d{6}', re.S).findall(str(decoded))[0]
                     mail_date = outlook_services.maildate()
                     model = OutlookMail.objects.all().filter(mail=mail)
                     model.update(flag=1, app=app)
-                    return JsonResponse({'hasUnread': hasUnread, 'code': code, 'mail_date': mail_date}, status=status.HTTP_200_OK)
-                return JsonResponse({'hasUnread': hasUnread, 'code': '', 'mail_date': ''}, status=status.HTTP_200_OK)
-            # 没有未读邮件
-            else:
+                    return JsonResponse({'hasUnread': hasUnread, 'code': code, 'mail_date': mail_date},
+                                        status=status.HTTP_200_OK)
+                else:
+                    return JsonResponse({'hasUnread': hasUnread, 'code': '', 'mail_date': ''}, status=status.HTTP_200_OK)
+
                 return JsonResponse({'hasUnread': hasUnread, 'code': '', 'mail_date': ''}, status=status.HTTP_200_OK)
         # 登陆失败
         else:
