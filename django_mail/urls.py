@@ -15,7 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf.urls import include
+from python_django import views
 
 urlpatterns = [
+    path('', views.dashboard, name='dashboard'),
     path('admin/', admin.site.urls),
+    path('api/mail/', include('python_django.urls', namespace='python_django'))
 ]

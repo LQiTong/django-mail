@@ -38,10 +38,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'corsheaders',
     'python_django.apps.PythonDjangoConfig',
 ]
 
 MIDDLEWARE = [
+    # CORS
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -75,10 +79,21 @@ WSGI_APPLICATION = 'django_mail.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'django-mail',  # 要连接的数据库名
+        'HOST': '127.0.0.1',  # ip地址 填本地127.0.0.1就OK
+        'PORT': 3306,  # 端口 默认是3306
+        'USER': 'root',  # 数据库的用户名
+        'PASSWORD': '727683',  # 数据库的密码
     }
 }
 
@@ -123,3 +138,12 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# CORS_ORIGIN_ALLOW_ALL如果为True，则接收所有非同源请求。与此相反。默认为False，False情况下仅在CORS_ORIGIN_WHITELIST名单中源才允许访问，源组成为访问协议+host+端口号
+# CORS_ORIGIN_WHITELIST，非同源白名单
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_WHITELIST = (
+    'http://localhost:8081',
+)
+
+
