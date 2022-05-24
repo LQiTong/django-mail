@@ -8,4 +8,4 @@ class OutlookSerializer(serializers.ModelSerializer):
     # 内置类 meta
     class Meta:
         model = OutlookMail
-        fields = ('id', 'mail', 'password')
+        fields = ('id', 'mail')

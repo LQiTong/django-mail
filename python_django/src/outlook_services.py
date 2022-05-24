@@ -6,10 +6,10 @@ import email.mime.multipart
 from .outlook_config import outlook, hotmail, gmail
 import base64
 
-imap_server = outlook().imap_server
-imap_port = outlook().imap_prot
-smtp_server = outlook().smtp_server
-smtp_port = outlook().smtp_port
+imap_server = outlook()['imap_server']
+imap_port = outlook()['imap_port']
+smtp_server = outlook()['smtp_server']
+smtp_port = outlook()['smtp_port']
 
 
 class Outlook:
@@ -32,7 +32,7 @@ class Outlook:
                 assert r == 'OK', 'login failed: %s' % str(r)
                 print(" > Signed in as %s" % self.username, d)
                 print(f" > {self.username} 登陆成功")
-                return f'{self.username} 登陆成功'
+                return True
             except Exception as err:
                 print(" > Sign in error: %s" % str(err))
                 login_attempts = login_attempts + 1
