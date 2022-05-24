@@ -81,8 +81,10 @@ def get_code(request):
             # 没有未读邮件
             else:
                 junk = outlook_services.select('Junk')
+                print('junk --> ', junk)
                 junkHasUnread = outlook_services.hasUnread()
                 if junkHasUnread:
+                    print('junkHasUnread')
                     latest_unread_mail = outlook_services.unread()
                     print('hasUnread --> ', hasUnread)
                     mail_from = outlook_services.mailfrom()
@@ -98,8 +100,6 @@ def get_code(request):
                                         status=status.HTTP_200_OK)
                 else:
                     return JsonResponse({'hasUnread': hasUnread, 'code': '', 'mail_date': ''}, status=status.HTTP_200_OK)
-
-                return JsonResponse({'hasUnread': hasUnread, 'code': '', 'mail_date': ''}, status=status.HTTP_200_OK)
         # 登陆失败
         else:
             return JsonResponse({'message': '{} 登录失败，请稍后再试'.format(mail)}, status=status.HTTP_200_OK)
