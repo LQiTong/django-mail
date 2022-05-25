@@ -9,3 +9,10 @@ class OutlookSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutlookMail
         fields = ('id', 'mail')
+
+
+class HotMailSerializer(serializers.ModelSerializer):
+    # 内置类 Meta
+    class Meta:
+        model = hotmail
+        fields = ('id', 'mail')
