@@ -75,13 +75,13 @@ def mail_operation(mail, password, app):
             if 'ins' in app and has_ins:
                 code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                 mail_date = outlook_services.maildate()
-                model = OutlookMail.objects.all().filter(mail=mail)
+                model = hotmail.objects.all().filter(mail=mail)
                 model.update(flag=1, app=app)
                 return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
             elif 'tiktok' in app and has_tiktok:
                 code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                 mail_date = outlook_services.maildate()
-                model = OutlookMail.objects.all().filter(mail=mail)
+                model = hotmail.objects.all().filter(mail=mail)
                 model.update(flag=1, app=app)
                 return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
             else:
@@ -99,13 +99,13 @@ def mail_operation(mail, password, app):
                 if 'ins' in app and has_ins:
                     code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                     mail_date = outlook_services.maildate()
-                    model = OutlookMail.objects.all().filter(mail=mail)
+                    model = hotmail.objects.all().filter(mail=mail)
                     model.update(flag=1, app=app)
                     return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
                 elif 'tiktok' in app and has_tiktok:
                     code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                     mail_date = outlook_services.maildate()
-                    model = OutlookMail.objects.all().filter(mail=mail)
+                    model = hotmail.objects.all().filter(mail=mail)
                     model.update(flag=1, app=app)
                     return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
                 else:
