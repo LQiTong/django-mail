@@ -19,7 +19,13 @@ def mail_operation(mail, password, app):
             print('收件箱邮件主体内容 --> ', mail_body)
             has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
             has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
-            if has_tiktok or has_ins:
+            if 'ins' in app and has_ins:
+                code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
+                mail_date = outlook_services.maildate()
+                model = OutlookMail.objects.all().filter(mail=mail)
+                model.update(flag=1, app=app)
+                return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
+            elif 'tiktok' in app and has_tiktok:
                 code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                 mail_date = outlook_services.maildate()
                 model = OutlookMail.objects.all().filter(mail=mail)
@@ -37,7 +43,13 @@ def mail_operation(mail, password, app):
                 print('垃圾箱邮件主体内容 --> ', mail_body)
                 has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
                 has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
-                if has_tiktok or has_ins:
+                if 'ins' in app and has_ins:
+                    code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
+                    mail_date = outlook_services.maildate()
+                    model = OutlookMail.objects.all().filter(mail=mail)
+                    model.update(flag=1, app=app)
+                    return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
+                elif 'tiktok' in app and has_tiktok:
                     code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                     mail_date = outlook_services.maildate()
                     model = OutlookMail.objects.all().filter(mail=mail)
@@ -60,10 +72,16 @@ def mail_operation(mail, password, app):
             print('收件箱邮件主体内容 --> ', mail_body)
             has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
             has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
-            if has_tiktok or has_ins:
+            if 'ins' in app and has_ins:
                 code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                 mail_date = outlook_services.maildate()
-                model = hotmail.objects.all().filter(mail=mail)
+                model = OutlookMail.objects.all().filter(mail=mail)
+                model.update(flag=1, app=app)
+                return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
+            elif 'tiktok' in app and has_tiktok:
+                code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
+                mail_date = outlook_services.maildate()
+                model = OutlookMail.objects.all().filter(mail=mail)
                 model.update(flag=1, app=app)
                 return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
             else:
@@ -78,10 +96,16 @@ def mail_operation(mail, password, app):
                 print('垃圾箱邮件主体内容 --> ', mail_body)
                 has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
                 has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
-                if has_tiktok or has_ins:
+                if 'ins' in app and has_ins:
                     code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                     mail_date = outlook_services.maildate()
-                    model = hotmail.objects.all().filter(mail=mail)
+                    model = OutlookMail.objects.all().filter(mail=mail)
+                    model.update(flag=1, app=app)
+                    return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
+                elif 'tiktok' in app and has_tiktok:
+                    code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
+                    mail_date = outlook_services.maildate()
+                    model = OutlookMail.objects.all().filter(mail=mail)
                     model.update(flag=1, app=app)
                     return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
                 else:
