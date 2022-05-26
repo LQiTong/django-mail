@@ -204,12 +204,16 @@ class Outlook:
             for payload in self.email_message.get_payload():
                 # if payload.is_multipart(): ...
                 body = (
-                    payload.get_payload().split(self.email_message['from'])[0].split('\r\n\r\n2015')[0]
+                    payload.get_payload()
+                        .split(self.email_message['from'])[0]
+                        .split('\r\n\r\n2015')[0]
                 )
                 return body
         else:
             body = (
-                self.email_message.get_payload().split(self.email_message['from'])[0].split('\r\n\r\n2015')[0]
+                self.email_message.get_payload()
+                    .split(self.email_message['from'])[0]
+                    .split('\r\n\r\n2015')[0]
             )
             return body
 

@@ -93,3 +93,33 @@ def update_mail(request):
                 return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
         else:
             return JsonResponse({'message': 'Parameter Error'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def test_login(request):
+    if request.method == 'GET':
+        mail = request.query_params.get('mail', None)
+        if not mail:
+            return JsonResponse({'message': 'Parameter Error'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            password = getPassword(mail)
+            try:
+                if '@outlook.com' in mail:
+                    outlook_services.login(mail, password)
+                    return JsonResponse({'message': '{} 登陆成功!'.format(mail)})
+                elif '@hotmail.com' in mail:
+                    outlook_services.login(mail, password)
+                    return JsonResponse({'message': '{} 登陆成功!'.format(mail)})
+            except Exception as err:
+                print('邮箱登录失败 --> ', err)
+                if '@outlook.com' in mail:
+                    model = OutlookMail.objects.all().filter(mail=mail)
+                    model.update(flag=2, app='handle')
+                    return JsonResponse({'message': '{} 邮箱登陆失败，请稍后再试！'.format(mail)}, status=status.HTTP_200_OK)
+                elif '@hotmail.com' in mail:
+                    model = hotmail.objects.all().filter(mail=mail)
+                    model.update(flag=2, app='handle')
+                    return JsonResponse({'message': '{} 邮箱登陆失败，请稍后再试！'.format(mail)}, status=status.HTTP_200_OK)
+        except OutlookMail.DoesNotExist:
+            return JsonResponse({'message': '无对应邮箱数据，请检查邮箱'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

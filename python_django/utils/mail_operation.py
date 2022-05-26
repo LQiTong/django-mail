@@ -15,15 +15,16 @@ def mail_operation(mail, password, app):
         if has_unread:
             outlook_services.unread()   # 选取第一封未读邮件
             mail_body = outlook_services.mailbody()
+            mail_from = outlook_services.mailfrom()
             print('收件箱邮件主体内容 --> ', mail_body)
-            has_tiktok = re.compile(r'code in TikTok', re.M).findall(str(mail_body))
-            has_ins = re.compile(r'sign up for an Instagram account', re.M).findall(str(mail_body))
+            has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
+            has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
             if has_tiktok or has_ins:
                 code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                 mail_date = outlook_services.maildate()
                 model = OutlookMail.objects.all().filter(mail=mail)
                 model.update(flag=1, app=app)
-                return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date}
+                return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
             else:
                 return {'message': '非tiktok或ins来源邮件，可能暂未收到验证码邮件，还请稍等'}
         else:
@@ -32,15 +33,16 @@ def mail_operation(mail, password, app):
             if junk_has_unread:
                 outlook_services.unread()
                 mail_body = outlook_services.mailbody()
+                mail_from = outlook_services.mailfrom()
                 print('垃圾箱邮件主体内容 --> ', mail_body)
-                has_tiktok = re.compile(r'code in TikTok', re.M).findall(str(mail_body))
-                has_ins = re.compile(r'sign up for an Instagram account', re.M).findall(str(mail_body))
+                has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
+                has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
                 if has_tiktok or has_ins:
                     code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                     mail_date = outlook_services.maildate()
                     model = OutlookMail.objects.all().filter(mail=mail)
                     model.update(flag=1, app=app)
-                    return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date}
+                    return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
                 else:
                     return {'message': '非tiktok或ins来源邮件，可能暂未收到验证码邮件，还请稍等'}
             else:
@@ -54,15 +56,16 @@ def mail_operation(mail, password, app):
         if has_unread:
             outlook_services.unread()  # 选取第一封未读邮件
             mail_body = outlook_services.mailbody()
+            mail_from = outlook_services.mailfrom()
             print('收件箱邮件主体内容 --> ', mail_body)
-            has_tiktok = re.compile(r'code in TikTok', re.M).findall(str(mail_body))
-            has_ins = re.compile(r'sign up for an Instagram account', re.M).findall(str(mail_body))
+            has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
+            has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
             if has_tiktok or has_ins:
                 code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                 mail_date = outlook_services.maildate()
                 model = hotmail.objects.all().filter(mail=mail)
                 model.update(flag=1, app=app)
-                return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date}
+                return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
             else:
                 return {'message': '非tiktok或ins来源邮件，可能暂未收到验证码邮件，还请稍等'}
         else:
@@ -71,15 +74,16 @@ def mail_operation(mail, password, app):
             if junk_has_unread:
                 outlook_services.unread()
                 mail_body = outlook_services.mailbody()
+                mail_from = outlook_services.mailfrom()
                 print('垃圾箱邮件主体内容 --> ', mail_body)
-                has_tiktok = re.compile(r'code in TikTok', re.M).findall(str(mail_body))
-                has_ins = re.compile(r'sign up for an Instagram account', re.M).findall(str(mail_body))
+                has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
+                has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
                 if has_tiktok or has_ins:
                     code = re.compile(r'\d{6}', re.S).findall(str(mail_body))[0]
                     mail_date = outlook_services.maildate()
                     model = hotmail.objects.all().filter(mail=mail)
                     model.update(flag=1, app=app)
-                    return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date}
+                    return {'hasUnread': has_unread, 'code': code, 'mail_date': mail_date, 'mail_from': mail_from}
                 else:
                     return {'message': '非tiktok或ins来源邮件，可能暂未收到验证码邮件，还请稍等'}
             else:
