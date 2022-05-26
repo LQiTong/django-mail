@@ -24,18 +24,18 @@ def dashboard(request):
 @api_view(['GET'])
 def outlook_list(request):
     if request.method == 'GET':
-        try:
-            # 需求：需要一个未使用过的邮箱
-            outlook = OutlookMail.objects.all().filter(flag=0)[:1]
-            print('outlook --> ', outlook)
-            mail = request.query_params.get('mail', None)
-            if mail is not None:
-                outlook = outlook.filter(mail__contains=mail)
+        # 需求：需要一个未使用过的邮箱
+        outlook = OutlookMail.objects.all().filter(flag=0)[:1]
+        print('outlook --> ', outlook)
+        mail = request.query_params.get('mail', None)
+        if mail is not None:
+            outlook = outlook.filter(mail__contains=mail)
 
-            outlook_serializer = OutlookSerializer(outlook, many=True)
+        outlook_serializer = OutlookSerializer(outlook, many=True)
+        if len(outlook_serializer.data) != 0:
             return JsonResponse(outlook_serializer.data, safe=False)
             # 'safe=False' for objects serialization
-        except OutlookMail.DoesNotExist:
+        else:
             hot_mail = hotmail.objects.all().filter(flag=0)[:1]
             print('hotmail --> ', hot_mail)
             mail = request.query_params.get('mail', None)
