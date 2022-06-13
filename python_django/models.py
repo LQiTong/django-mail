@@ -10,7 +10,7 @@ class OutlookMail(models.Model):
     password = models.CharField(verbose_name='密码', max_length=255, default='')  # 邮箱密码
     flag = models.IntegerField(verbose_name='是否使用', default=0)    # 是否使用过 1 已使用 0 未使用 2 废弃锁定
     app = models.CharField(verbose_name='来源', max_length=255, default='')
-
+    last_get = models.CharField(verbose_name='上次获取的时间戳', max_length=255, default='')
     # class Meta:
     #     verbose_name = '微软邮箱'
     #     verbose_name_plural = verbose_name
@@ -25,6 +25,7 @@ class hotmail(models.Model):
     password = models.CharField(verbose_name='密码', max_length=255, default='')
     flag = models.IntegerField(verbose_name='是否使用', default=0)  # 是否使用过 1 已使用 0 未使用 2 废弃锁定
     app = models.CharField(verbose_name='来源', max_length=255, default='')
+    last_get = models.CharField(verbose_name='上次获取的时间戳', max_length=255, default='')
 
     class Meta:
         verbose_name = '微软邮箱'
@@ -40,6 +41,7 @@ class gmail(models.Model):
     password = models.CharField(verbose_name='密码', max_length=255, default='')
     flag = models.IntegerField(verbose_name='是否使用', default=0)  # 是否使用过 1 已使用 0 未使用 2 废弃锁定
     app = models.CharField(verbose_name='来源', max_length=255, default='')
+    last_get = models.CharField(verbose_name='上次获取的时间戳', max_length=255, default='')
 
     class Meta:
         verbose_name = '谷歌邮箱'
@@ -55,6 +57,7 @@ class net163(models.Model):
     password = models.CharField(verbose_name='密码', max_length=255, default='')
     flag = models.IntegerField(verbose_name='是否使用', default=0)  # 是否使用过 1 已使用 0 未使用 2 废弃锁定
     app = models.CharField(verbose_name='来源', max_length=255, default='')
+    last_get = models.CharField(verbose_name='上次获取的时间戳', max_length=255, default='')
 
     class Meta:
         verbose_name = '网易邮箱'

@@ -8,6 +8,9 @@ from python_django.src.outlook_services import Outlook
 from python_django.utils.get_password_decode import getPassword
 from python_django.utils.mail_operation import mail_operation
 
+import time
+import calendar
+
 outlook_services = Outlook()
 
 
@@ -19,6 +22,52 @@ def home(request):
 
 def dashboard(request):
     return HttpResponse("I'm dashboard!!!")
+
+
+def jud_mail(serializer_data):
+    timestamp = serializer_data[0]['last_get']
+    print('last_get --> ', timestamp)
+    mail = serializer_data[0]['mail']
+    print('mail --> ', mail)
+    time_now = calendar.timegm(time.gmtime())
+    print('time_now --> ', time_now)
+
+    if timestamp is not None and len(timestamp) != 0:
+        time_gap = int(time_now) - int(timestamp)
+        print('time_gap --> ', time_gap)
+        if '@outlook.com' in mail:
+            # 如果大于等于 5 分钟，那么该邮箱可用
+            if time_gap >= 300:
+                model = OutlookMail.objects.all().filter(mail=mail)
+                model.update(last_get=str(time_now))
+                return JsonResponse(serializer_data, safe=False)
+            else:
+                model = OutlookMail.objects.all().filter(mail=mail)
+                model.update(flag=3, last_get=str(time_now))
+                outlook = OutlookMail.objects.all().filter(flag=0)[:1]
+                outlook_serializer = OutlookSerializer(outlook, many=True)
+                return jud_mail(outlook_serializer.data)
+        elif '@hotmail.com' in mail:
+            # 如果大于等于 5 分钟，那么该邮箱可用
+            if time_gap >= 300:
+                model = hotmail.objects.all().filter(mail=mail)
+                model.update(last_get=str(time_now))
+                return JsonResponse(serializer_data, safe=False)
+            else:
+                model = hotmail.objects.all().filter(mail=mail)
+                model.update(flag=3, last_get=str(time_now))
+                hot = hotmail.objects.all().filter(flag=0)[:1]
+                hot_serializer = HotMailSerializer(hot, many=True)
+                return jud_mail(hot_serializer.data)
+    else:
+        if '@outlook.com' in mail:
+            model = OutlookMail.objects.all().filter(mail=mail)
+            model.update(last_get=str(time_now))
+            return JsonResponse(serializer_data, safe=False)
+        elif '@hotmail.com' in mail:
+            model = hotmail.objects.all().filter(mail=mail)
+            model.update(last_get=str(time_now))
+            return JsonResponse(serializer_data, safe=False)
 
 
 @api_view(['GET'])
@@ -33,7 +82,7 @@ def outlook_list(request):
 
         outlook_serializer = OutlookSerializer(outlook, many=True)
         if len(outlook_serializer.data) != 0:
-            return JsonResponse(outlook_serializer.data, safe=False)
+            return jud_mail(outlook_serializer.data)
             # 'safe=False' for objects serialization
         else:
             hot_mail = hotmail.objects.all().filter(flag=0)[:1]
@@ -43,7 +92,8 @@ def outlook_list(request):
                 hot_mail = hot_mail.filter(mail__contains=mail)
 
             hot_mail_serializer = HotMailSerializer(hot_mail, many=True)
-            return JsonResponse(hot_mail_serializer.data, safe=False)
+            return jud_mail(hot_mail_serializer.data)
+            # return JsonResponse(hot_mail_serializer.data, safe=False)
             # 'safe=False' for objects serialization
 
 
