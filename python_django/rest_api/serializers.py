@@ -8,4 +8,11 @@ class OutlookSerializer(serializers.ModelSerializer):
     # 内置类 meta
     class Meta:
         model = OutlookMail
-        fields = ('id', 'mail')
+        fields = ('id', 'mail', 'last_get')
+
+
+class HotMailSerializer(serializers.ModelSerializer):
+    # 内置类 Meta
+    class Meta:
+        model = hotmail
+        fields = ('id', 'mail', 'last_get')
