@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'django_apscheduler',     # 新加入的定时任务插件django-apscheduler
     'python_django.apps.PythonDjangoConfig',
 ]
 
