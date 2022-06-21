@@ -12,6 +12,7 @@ from django_apscheduler.jobstores import DjangoJobStore, register_events, regist
 
 import time
 import calendar
+import datetime
 
 '''
 date:在您希望在某个特定时间仅运行一次作业时使用
@@ -34,18 +35,18 @@ try:
     '''
 
 
-    @register_job(scheduler, "interval", seconds=5, id="task_time", replace_existing=True)
+    @register_job(scheduler, "interval", seconds=1, id="task_time", replace_existing=True)
     def refresh_mail_flag():
         # 定义定时任务
         # 定时每 30 秒执行一次
-        print(f'===================定时器执行开始 {calendar.timegm(time.gmtime())}===================')
+        # print(f'===================定时器执行开始 {datetime.datetime.now()}===================')
         end_time = int(calendar.timegm(time.gmtime())) - 300
         start_time = int(calendar.timegm(time.gmtime())) - (30 * 24 * 60 * 60)
         ol_models = OutlookMail.objects.all().filter(flag=3, last_get__range=(start_time, end_time))
         hot_models = hotmail.objects.all().filter(flag=3, last_get__range=(start_time, end_time))
-        ol_models.update(flag=0, last_get=int(calendar.timegm(time.gmtime())))
-        hot_models.update(flag=0, last_get=int(calendar.timegm(time.gmtime())))
-        print(f'===================定时器执行完毕 {calendar.timegm(time.gmtime())}===================')
+        ol_models.update(flag=0)
+        hot_models.update(flag=0)
+        # print(f'===================定时器执行完毕 {datetime.datetime.now()}===================')
 
 
     # 监控任务
@@ -73,49 +74,48 @@ def dashboard(request):
 
 
 def jud_mail(serializer_data):
-    timestamp = serializer_data[0]['last_get']
-    print('last_get --> ', timestamp)
-    mail = serializer_data[0]['mail']
-    print('mail --> ', mail)
-    time_now = calendar.timegm(time.gmtime())
-    print('time_now --> ', time_now)
+    if len(serializer_data) != 0:
+        timestamp = serializer_data[0]['last_get']
+        mail = serializer_data[0]['mail']
+        time_now = calendar.timegm(time.gmtime())
 
-    if timestamp is not None and len(timestamp) != 0:
-        time_gap = int(time_now) - int(timestamp)
-        print('time_gap --> ', time_gap)
-        if '@outlook.com' in mail:
-            # 如果大于等于 5 分钟，那么该邮箱可用
-            if time_gap >= 300:
+        if timestamp is not None:
+            time_gap = int(time_now) - int(timestamp)
+            if '@outlook.com' in mail:
+                # 如果大于等于 5 分钟，那么该邮箱可用
+                if time_gap >= 300:
+                    model = OutlookMail.objects.all().filter(mail=mail)
+                    model.update(last_get=str(time_now))
+                    return JsonResponse(serializer_data, safe=False)
+                else:
+                    model = OutlookMail.objects.all().filter(mail=mail)
+                    model.update(flag=3, last_get=str(time_now))
+                    outlook = OutlookMail.objects.all().filter(flag=0)[:1]
+                    outlook_serializer = OutlookSerializer(outlook, many=True)
+                    return jud_mail(outlook_serializer.data)
+            elif '@hotmail.com' in mail:
+                # 如果大于等于 5 分钟，那么该邮箱可用
+                if time_gap >= 300:
+                    model = hotmail.objects.all().filter(mail=mail)
+                    model.update(last_get=str(time_now))
+                    return JsonResponse(serializer_data, safe=False)
+                else:
+                    model = hotmail.objects.all().filter(mail=mail)
+                    model.update(flag=3, last_get=str(time_now))
+                    hot = hotmail.objects.all().filter(flag=0)[:1]
+                    hot_serializer = HotMailSerializer(hot, many=True)
+                    return jud_mail(hot_serializer.data)
+        else:
+            if '@outlook.com' in mail:
                 model = OutlookMail.objects.all().filter(mail=mail)
                 model.update(last_get=str(time_now))
                 return JsonResponse(serializer_data, safe=False)
-            else:
-                model = OutlookMail.objects.all().filter(mail=mail)
-                model.update(flag=3, last_get=str(time_now))
-                outlook = OutlookMail.objects.all().filter(flag=0)[:1]
-                outlook_serializer = OutlookSerializer(outlook, many=True)
-                return jud_mail(outlook_serializer.data)
-        elif '@hotmail.com' in mail:
-            # 如果大于等于 5 分钟，那么该邮箱可用
-            if time_gap >= 300:
+            elif '@hotmail.com' in mail:
                 model = hotmail.objects.all().filter(mail=mail)
                 model.update(last_get=str(time_now))
                 return JsonResponse(serializer_data, safe=False)
-            else:
-                model = hotmail.objects.all().filter(mail=mail)
-                model.update(flag=3, last_get=str(time_now))
-                hot = hotmail.objects.all().filter(flag=0)[:1]
-                hot_serializer = HotMailSerializer(hot, many=True)
-                return jud_mail(hot_serializer.data)
     else:
-        if '@outlook.com' in mail:
-            model = OutlookMail.objects.all().filter(mail=mail)
-            model.update(last_get=str(time_now))
-            return JsonResponse(serializer_data, safe=False)
-        elif '@hotmail.com' in mail:
-            model = hotmail.objects.all().filter(mail=mail)
-            model.update(last_get=str(time_now))
-            return JsonResponse(serializer_data, safe=False)
+        return JsonResponse({'message': '已无可用邮箱，请联系管理员'}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -123,7 +123,7 @@ def outlook_list(request):
     if request.method == 'GET':
         # 需求：需要一个未使用过的邮箱
         outlook = OutlookMail.objects.all().filter(flag=0)[:1]
-        print('outlook --> ', outlook)
+        # print('outlook --> ', outlook)
         mail = request.query_params.get('mail', None)
         if mail is not None:
             outlook = outlook.filter(mail__contains=mail)
@@ -134,13 +134,16 @@ def outlook_list(request):
             # 'safe=False' for objects serialization
         else:
             hot_mail = hotmail.objects.all().filter(flag=0)[:1]
-            print('hotmail --> ', hot_mail)
+            # print('hotmail --> ', hot_mail)
             mail = request.query_params.get('mail', None)
             if mail is not None:
                 hot_mail = hot_mail.filter(mail__contains=mail)
 
             hot_mail_serializer = HotMailSerializer(hot_mail, many=True)
-            return jud_mail(hot_mail_serializer.data)
+            if len(hot_mail_serializer.data) != 0:
+                return jud_mail(hot_mail_serializer.data)
+            else:
+                return JsonResponse({'message': '已无可用邮箱，请联系管理员'}, status=status.HTTP_200_OK)
             # return JsonResponse(hot_mail_serializer.data, safe=False)
             # 'safe=False' for objects serialization
 
