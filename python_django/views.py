@@ -115,37 +115,65 @@ def jud_mail(serializer_data):
                 model.update(last_get=str(time_now))
                 return JsonResponse(serializer_data, safe=False)
     else:
-        return JsonResponse({'message': '已无可用邮箱，请联系管理员'}, status=status.HTTP_200_OK)
+        return JsonResponse(serializer_data, safe=False)
+
+
+def get_mails(data, count):
+    if len(data) != 0:
+        # 获取 count 数量的邮箱并且标上标记
+        mails = list()
+        try:
+            for i in range(int(count)):
+                timestamp = data[i]['last_get']
+                mail = data[i]['mail']
+                time_now = calendar.timegm(time.gmtime())
+                model = hotmail.objects.all().filter(mail=mail)
+                model.update(flag=3, last_get=str(time_now))
+                _hot_serializer = HotMailSerializer(model, many=True)
+                mails.append(_hot_serializer.data[0])
+            print('mails --> ', mails)
+            return JsonResponse(mails, safe=False)
+        except Exception as err:
+            return JsonResponse([], safe=False)
+    else:
+        return JsonResponse(data, safe=False)
 
 
 @api_view(['GET'])
 def outlook_list(request):
     if request.method == 'GET':
-        # 需求：需要一个未使用过的邮箱
-        outlook = OutlookMail.objects.all().filter(flag=0)[:1]
-        # print('outlook --> ', outlook)
-        mail = request.query_params.get('mail', None)
-        if mail is not None:
-            outlook = outlook.filter(mail__contains=mail)
+        count = request.query_params.get('count', None)
+        if count is None:
+            # 需求：需要一个未使用过的邮箱
+            outlook = OutlookMail.objects.all().filter(flag=0)[:1]
+            # print('outlook --> ', outlook)
 
-        outlook_serializer = OutlookSerializer(outlook, many=True)
-        if len(outlook_serializer.data) != 0:
-            return jud_mail(outlook_serializer.data)
-            # 'safe=False' for objects serialization
-        else:
-            hot_mail = hotmail.objects.all().filter(flag=0)[:1]
-            # print('hotmail --> ', hot_mail)
-            mail = request.query_params.get('mail', None)
-            if mail is not None:
-                hot_mail = hot_mail.filter(mail__contains=mail)
-
-            hot_mail_serializer = HotMailSerializer(hot_mail, many=True)
-            if len(hot_mail_serializer.data) != 0:
-                return jud_mail(hot_mail_serializer.data)
+            outlook_serializer = OutlookSerializer(outlook, many=True)
+            if len(outlook_serializer.data) != 0:
+                return jud_mail(outlook_serializer.data)
+                # 'safe=False' for objects serialization
             else:
-                return JsonResponse({'message': '已无可用邮箱，请联系管理员'}, status=status.HTTP_200_OK)
-            # return JsonResponse(hot_mail_serializer.data, safe=False)
-            # 'safe=False' for objects serialization
+                hot_mail = hotmail.objects.all().filter(flag=0)[:1]
+                # print('hotmail --> ', hot_mail)
+
+                hot_mail_serializer = HotMailSerializer(hot_mail, many=True)
+                if len(hot_mail_serializer.data) != 0:
+                    return jud_mail(hot_mail_serializer.data)
+                else:
+                    return JsonResponse(hot_mail_serializer.data, safe=False)
+                # return JsonResponse(hot_mail_serializer.data, safe=False)
+                # 'safe=False' for objects serialization
+        else:
+            # 需求，需要 count 数量的可用邮箱
+            if str(count).isdigit():
+                mailByCount = hotmail.objects.all().filter(flag=0)
+                mail_serializer = HotMailSerializer(mailByCount, many=True)
+                if len(mail_serializer.data) != 0:
+                    return get_mails(mail_serializer.data, count)
+                else:
+                    return JsonResponse(mail_serializer.data, safe=False)
+            else:
+                return JsonResponse({'message': '参数输入有误'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
@@ -162,7 +190,6 @@ def get_code(request):
                 return JsonResponse(response, status=status.HTTP_200_OK)
 
             except Exception as err:
-                print('邮箱登录失败 --> ', err)
                 if '@outlook.com' in mail:
                     model = OutlookMail.objects.all().filter(mail=mail)
                     model.update(flag=2, app=app)
@@ -207,19 +234,25 @@ def test_login(request):
             try:
                 if '@outlook.com' in mail:
                     outlook_services.login(mail, password)
-                    return JsonResponse({'message': '{} 登陆成功!'.format(mail)})
+                    model = OutlookMail.objects.all().filter(mail=mail)
+                    model.update(flag=0, app='')
+                    return JsonResponse({'message': '{} ==== login success!'.format(mail)})
                 elif '@hotmail.com' in mail:
                     outlook_services.login(mail, password)
-                    return JsonResponse({'message': '{} 登陆成功!'.format(mail)})
+                    model = hotmail.objects.all().filter(mail=mail)
+                    model.update(flag=0, app='')
+                    return JsonResponse({'message': '{} ==== login success!'.format(mail)})
             except Exception as err:
                 print('邮箱登录失败 --> ', err)
                 if '@outlook.com' in mail:
                     model = OutlookMail.objects.all().filter(mail=mail)
                     model.update(flag=2, app='handle')
-                    return JsonResponse({'message': '{} 邮箱登陆失败，请稍后再试！'.format(mail)}, status=status.HTTP_200_OK)
+                    return JsonResponse({'message': '{} ==== login failed, please try again later！'.format(mail)},
+                                        status=status.HTTP_200_OK)
                 elif '@hotmail.com' in mail:
                     model = hotmail.objects.all().filter(mail=mail)
                     model.update(flag=2, app='handle')
-                    return JsonResponse({'message': '{} 邮箱登陆失败，请稍后再试！'.format(mail)}, status=status.HTTP_200_OK)
+                    return JsonResponse({'message': '{} ==== login failed, please try again later！'.format(mail)},
+                                        status=status.HTTP_200_OK)
         except OutlookMail.DoesNotExist:
             return JsonResponse({'message': '无对应邮箱数据，请检查邮箱'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -16,7 +16,7 @@ def mail_operation(mail, password, app):
             outlook_services.unread()   # 选取第一封未读邮件
             mail_body = outlook_services.mailbody()
             mail_from = outlook_services.mailfrom()
-            print('收件箱邮件主体内容 --> ', mail_body)
+            # print('收件箱邮件主体内容 --> ', mail_body)
             has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
             has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
             if 'ins' in app and has_ins:
@@ -40,7 +40,7 @@ def mail_operation(mail, password, app):
                 outlook_services.unread()
                 mail_body = outlook_services.mailbody()
                 mail_from = outlook_services.mailfrom()
-                print('垃圾箱邮件主体内容 --> ', mail_body)
+                # print('垃圾箱邮件主体内容 --> ', mail_body)
                 has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
                 has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
                 if 'ins' in app and has_ins:
@@ -69,7 +69,7 @@ def mail_operation(mail, password, app):
             outlook_services.unread()  # 选取第一封未读邮件
             mail_body = outlook_services.mailbody()
             mail_from = outlook_services.mailfrom()
-            print('收件箱邮件主体内容 --> ', mail_body)
+            # print('收件箱邮件主体内容 --> ', mail_body)
             has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
             has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
             if 'ins' in app and has_ins:
@@ -93,7 +93,7 @@ def mail_operation(mail, password, app):
                 outlook_services.unread()
                 mail_body = outlook_services.mailbody()
                 mail_from = outlook_services.mailfrom()
-                print('垃圾箱邮件主体内容 --> ', mail_body)
+                # print('垃圾箱邮件主体内容 --> ', mail_body)
                 has_tiktok = re.compile(r'TikTok', re.M).findall(str(mail_body))
                 has_ins = re.compile(r'Instagram', re.M).findall(str(mail_body))
                 if 'ins' in app and has_ins:
