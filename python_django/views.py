@@ -122,8 +122,8 @@ def get_mails(data, count):
     if len(data) != 0:
         # 获取 count 数量的邮箱并且标上标记
         mails = list()
-        try:
-            for i in range(int(count)):
+        for i in range(int(count)):
+            try:
                 timestamp = data[i]['last_get']
                 mail = data[i]['mail']
                 time_now = calendar.timegm(time.gmtime())
@@ -131,10 +131,10 @@ def get_mails(data, count):
                 model.update(flag=3, last_get=str(time_now))
                 _hot_serializer = HotMailSerializer(model, many=True)
                 mails.append(_hot_serializer.data[0])
-            print('mails --> ', mails)
-            return JsonResponse(mails, safe=False)
-        except Exception as err:
-            return JsonResponse([], safe=False)
+            except Exception as err:
+                return JsonResponse(mails, safe=False)
+        print('mails --> ', mails)
+        return JsonResponse(mails, safe=False)
     else:
         return JsonResponse(data, safe=False)
 
