@@ -121,20 +121,18 @@ def jud_mail(serializer_data):
 def get_mails(data, count):
     if len(data) != 0:
         # 获取 count 数量的邮箱并且标上标记
-        mails = list()
-        for i in range(int(count)):
-            try:
-                timestamp = data[i]['last_get']
-                mail = data[i]['mail']
-                time_now = calendar.timegm(time.gmtime())
-                model = hotmail.objects.all().filter(mail=mail)
-                model.update(flag=3, last_get=str(time_now))
-                _hot_serializer = HotMailSerializer(model, many=True)
-                mails.append(_hot_serializer.data[0])
-            except Exception as err:
-                return JsonResponse(mails, safe=False)
-        print('mails --> ', mails)
-        return JsonResponse(mails, safe=False)
+        querySet = hotmail.objects.all().filter(flag=0)
+
+        _hot_serializer = HotMailSerializer(querySet[:int(count)], many=True)
+        time_now = calendar.timegm(time.gmtime())
+        bulk = []
+        for item in querySet[:int(count)]:
+            item.flag = 3
+            item.last_get = time_now
+            bulk.append(item)
+        hotmail.objects.bulk_update(bulk, ['flag', 'last_get'])
+
+        return JsonResponse(_hot_serializer.data, safe=False)
     else:
         return JsonResponse(data, safe=False)
 
