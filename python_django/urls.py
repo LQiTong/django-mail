@@ -14,5 +14,5 @@ urlpatterns = [
     # update mail api
     path('update_mail/', views.update_mail, name='update_mail'),
     # test_login api
-    path('test_login/', views.test_login, name='test_login')
+    # path('test_login/', views.test_login, name='test_login')
 ]

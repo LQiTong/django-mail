@@ -30,11 +30,11 @@ class Outlook:
                 self.imap = imaplib.IMAP4_SSL(imap_server, imap_port)
                 r, d = self.imap.login(username, password)
                 assert r == 'OK', 'login failed: %s' % str(r)
-                print(" > Signed in as %s" % self.username, d)
-                print(f" > {self.username} 登陆成功")
+                # print(" > Signed in as %s" % self.username, d)
+                # print(f" > {self.username} 登陆成功")
                 return True
             except Exception as err:
-                print(" > Sign in error: %s" % str(err))
+                # print(" > Sign in error: %s" % str(err))
                 login_attempts = login_attempts + 1
                 if login_attempts < 3:
                     continue

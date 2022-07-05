@@ -12,13 +12,14 @@ from django_apscheduler.jobstores import DjangoJobStore, register_events, regist
 
 import time
 import calendar
+import base64
 import datetime
 
 '''
 date:在您希望在某个特定时间仅运行一次作业时使用
 interval:当您要以固定的时间间隔运行作业时使用
 cron:以crontab的方式运行定时任务
-hour:设置以小时为单位的定时器
+hours:设置以小时为单位的定时器
 minutes:设置以分钟为单位的定时器
 seconds:设置以秒为单位的定时器
 '''
@@ -49,11 +50,30 @@ try:
         # print(f'===================定时器执行完毕 {datetime.datetime.now()}===================')
 
 
+    @register_job(scheduler, "cron", hour='0', minute='0', second='0', id="test_login", replace_existing=True)
+    def login():
+        query_set = hotmail.objects.all().filter(flag=0)
+        bulk = []
+        for item in query_set:
+            password = str(base64.b64decode(str(item.password)).decode())
+            # print('password --> ', password)
+            try:
+                outlook_services.login(item.mail, password)
+                item.flag = 0
+                item.app = ''
+                bulk.append(item)
+            except Exception as err:
+                print('err： {}'.format(item.mail), err)
+                item.flag = 2
+                item.app = 'handle'
+                bulk.append(item)
+        hotmail.objects.bulk_update(bulk, ['flag', 'app'])
+
     # 监控任务
     register_events(scheduler)
 
     # 向调度器中添加定时任务
-    # scheduler.add_job(refresh_mail_flag, 'date', args=[100, 'python'])
+    # scheduler.add_job(refresh_mail_flag)
     # 启动定时器任务调度器工作 --- 调度器开始
     scheduler.start()
 except Exception as e:
@@ -219,38 +239,3 @@ def update_mail(request):
                 return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
         else:
             return JsonResponse({'message': 'Parameter Error'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-def test_login(request):
-    if request.method == 'GET':
-        mail = request.query_params.get('mail', None)
-        if not mail:
-            return JsonResponse({'message': 'Parameter Error'}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            password = getPassword(mail)
-            try:
-                if '@outlook.com' in mail:
-                    outlook_services.login(mail, password)
-                    model = OutlookMail.objects.all().filter(mail=mail)
-                    model.update(flag=0, app='')
-                    return JsonResponse({'message': '{} ==== login success!'.format(mail)})
-                elif '@hotmail.com' in mail:
-                    outlook_services.login(mail, password)
-                    model = hotmail.objects.all().filter(mail=mail)
-                    model.update(flag=0, app='')
-                    return JsonResponse({'message': '{} ==== login success!'.format(mail)})
-            except Exception as err:
-                print('邮箱登录失败 --> ', err)
-                if '@outlook.com' in mail:
-                    model = OutlookMail.objects.all().filter(mail=mail)
-                    model.update(flag=2, app='handle')
-                    return JsonResponse({'message': '{} ==== login failed, please try again later！'.format(mail)},
-                                        status=status.HTTP_200_OK)
-                elif '@hotmail.com' in mail:
-                    model = hotmail.objects.all().filter(mail=mail)
-                    model.update(flag=2, app='handle')
-                    return JsonResponse({'message': '{} ==== login failed, please try again later！'.format(mail)},
-                                        status=status.HTTP_200_OK)
-        except OutlookMail.DoesNotExist:
-            return JsonResponse({'message': '无对应邮箱数据，请检查邮箱'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
