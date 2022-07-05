@@ -13,6 +13,6 @@ urlpatterns = [
     path('getcode/', views.get_code, name='get_code'),
     # update mail api
     path('update_mail/', views.update_mail, name='update_mail'),
-    # test_login api
-    # path('test_login/', views.test_login, name='test_login')
+    # get_verify api
+    path('get_verify/', views.get_verify, name='get_verify')
 ]

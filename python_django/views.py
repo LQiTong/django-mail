@@ -1,19 +1,26 @@
-from django.shortcuts import render, HttpResponse, HttpResponseRedirect
+import base64
+import calendar
+import time
+
+from apscheduler.schedulers.background import BackgroundScheduler  # 使用它可以让你的定时任务在后台运行
 from django.http.response import JsonResponse
-from python_django.models import OutlookMail, hotmail, gmail, net163
-from python_django.rest_api.serializers import OutlookSerializer, HotMailSerializer
-from rest_framework.decorators import api_view
+from django.shortcuts import HttpResponse
+from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 from rest_framework import status
+from rest_framework.decorators import api_view
+
+from python_django.models import OutlookMail, hotmail
+from python_django.rest_api.serializers import OutlookSerializer, HotMailSerializer
 from python_django.src.outlook_services import Outlook
 from python_django.utils.get_password_decode import getPassword
 from python_django.utils.mail_operation import mail_operation
-from apscheduler.schedulers.background import BackgroundScheduler  # 使用它可以让你的定时任务在后台运行
-from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
+# 导入网页驱动软件
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+# 导入Image类
+from PIL import Image
 
-import time
-import calendar
-import base64
-import datetime
+# 导入网页驱动软件
 
 '''
 date:在您希望在某个特定时间仅运行一次作业时使用
@@ -68,6 +75,7 @@ try:
                 item.app = 'handle'
                 bulk.append(item)
         hotmail.objects.bulk_update(bulk, ['flag', 'app'])
+
 
     # 监控任务
     register_events(scheduler)
@@ -239,3 +247,63 @@ def update_mail(request):
                 return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
         else:
             return JsonResponse({'message': 'Parameter Error'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_verify(request):
+    if request.method == 'GET':
+        url = request.query_params.get('url', None)
+
+        if url is not None:
+            url_decode = str(base64.b64decode(url).decode())
+            print('url_decode', url_decode)
+            ch_options = webdriver.ChromeOptions()
+            # 为Chrome配置无头模式
+            ch_options.add_argument("--headless")  # 隐藏浏览器运行
+            ch_options.add_argument('--no-sandbox')  # 给予root执行权限
+            ch_options.add_argument('--disable-gpu')
+            ch_options.add_argument('--disable-dev-shm-usage')
+            # 在启动浏览器时加入配置
+            browser = webdriver.Chrome(options=ch_options)
+
+            # 获取此时的时间戳
+            time_now = calendar.timegm(time.gmtime())
+            try:
+                # 这是测试网站
+                browser.get(url_decode)
+                time.sleep(10)
+                # print(browser.page_source)
+                log = browser.find_element(By.TAG_NAME, 'html').screenshot(
+                    '/www/wwwroot/mail_project/python_django/img/img_full_screen.bmp')
+                print('log --> ', log)
+                # 定位需要二次截图区块的元素
+                dest = browser.find_element(By.XPATH, '//*[@id="captcha-main"]/div[1]')
+                # 区块元素左上角在网页中的x坐标
+                left = dest.location['x']
+                # 区块元素左上角在网页中的y坐标
+                top = dest.location['y']
+                # 区块元素右下角在网页中的x坐标
+                right = dest.location['x'] + dest.size['width']
+                # 区块元素右下角在网页中的y坐标
+                bottom = dest.location['y'] + dest.size['height']
+                # 打开页面的截图
+                photo = Image.open('/www/wwwroot/mail_project/python_django/img/img_full_screen.bmp')
+                # 根据区块元素坐标实现二次截图
+                photo = photo.crop((left, top, right, bottom))
+                # 保存二次截图
+                photo.save('/www/wwwroot/mail_project/python_django/img/img_{}.bmp'.format(str(time_now)))
+                file_url = '/www/wwwroot/mail_project/python_django/img/img_{}.bmp'.format(str(time_now))
+                try:
+                    r = HttpResponse(open(file_url, 'rb'))
+                    r['content_type'] = 'application'
+                    r['Content-Disposition'] = 'attachment;filename=img_verify_{}'.format(time_now)
+                    return r
+                except Exception as err:
+                    print('图片下载出错：err --> ', err)
+                    return HttpResponse('图片下载失败')
+            except Exception as err:
+                print('err --> ', err)
+                print('session expired. Please change and try again!!!')
+                return HttpResponse('session 过期')
+        else:
+            return JsonResponse({'message': '参数有误，没有传入url'}, status=status.HTTP_400_BAD_REQUEST)
