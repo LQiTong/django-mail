@@ -2,6 +2,7 @@ import base64
 import calendar
 import time
 
+from django.shortcuts import render
 from apscheduler.schedulers.background import BackgroundScheduler  # 使用它可以让你的定时任务在后台运行
 from django.http.response import JsonResponse
 from django.shortcuts import HttpResponse
@@ -57,11 +58,11 @@ try:
         # print(f'===================定时器执行完毕 {datetime.datetime.now()}===================')
 
 
-    @register_job(scheduler, "cron", hour='0', minute='0', second='0', id="test_login", replace_existing=True)
+    @register_job(scheduler, "interval", minutes=30, id="task_login", replace_existing=True)
     def login():
         query_set = hotmail.objects.all().filter(flag=0)
         bulk = []
-        for item in query_set:
+        for item in query_set[:1000]:
             password = str(base64.b64decode(str(item.password)).decode())
             # print('password --> ', password)
             try:
@@ -98,7 +99,12 @@ def home(request):
 
 
 def dashboard(request):
-    return HttpResponse("I'm dashboard!!!")
+    mail1 = hotmail.objects.all().filter(flag=3)
+    _serializer1 = HotMailSerializer(mail1, many=True)
+    mail2 = hotmail.objects.all().filter(flag=0)
+    _serializer2 = HotMailSerializer(mail2, many=True)
+    context = {"mail1": len(_serializer1.data), "mail2": len(_serializer2.data)}
+    return render(request, 'mail/dashboard.html', context)
 
 
 def jud_mail(serializer_data):
