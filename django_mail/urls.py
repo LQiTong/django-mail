@@ -20,6 +20,7 @@ from python_django import views
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('mail/', views.sign_status, name='sign_status'),
     path('admin/', admin.site.urls),
     path('api/mail/', include('python_django.urls', namespace='python_django'))
 ]

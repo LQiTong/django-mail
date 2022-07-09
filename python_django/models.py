@@ -11,6 +11,8 @@ class OutlookMail(models.Model):
     flag = models.IntegerField(verbose_name='是否使用', default=0)  # 是否使用过 1 已使用 0 未使用 2 废弃锁定
     app = models.CharField(verbose_name='来源', max_length=255, default='')
     last_get = models.IntegerField(verbose_name='上次获取的时间戳', default=0)
+    status = models.IntegerField(verbose_name='注册 ins 状态', default=0)
+    created = models.CharField(verbose_name='邮箱数据入库时间', max_length=255, default='')
 
     class Meta:
         verbose_name = '微软邮箱'
@@ -27,6 +29,8 @@ class hotmail(models.Model):
     flag = models.IntegerField(verbose_name='是否使用', default=0)  # 是否使用过 1 已使用 0 未使用 2 废弃锁定
     app = models.CharField(verbose_name='来源', max_length=255, default='')
     last_get = models.IntegerField(verbose_name='上次获取的时间戳', default=0)
+    status = models.IntegerField(verbose_name='注册 ins 状态', default=0)
+    created = models.CharField(verbose_name='邮箱数据入库时间', max_length=255, default='')
 
     class Meta:
         verbose_name = '微软邮箱'
@@ -43,6 +47,8 @@ class gmail(models.Model):
     flag = models.IntegerField(verbose_name='是否使用', default=0)  # 是否使用过 1 已使用 0 未使用 2 废弃锁定
     app = models.CharField(verbose_name='来源', max_length=255, default='')
     last_get = models.IntegerField(verbose_name='上次获取的时间戳', default=0)
+    status = models.IntegerField(verbose_name='注册 ins 状态', default=0)
+    created = models.CharField(verbose_name='邮箱数据入库时间', max_length=255, default='')
 
     class Meta:
         verbose_name = '谷歌邮箱'
@@ -59,6 +65,8 @@ class net163(models.Model):
     flag = models.IntegerField(verbose_name='是否使用', default=0)  # 是否使用过 1 已使用 0 未使用 2 废弃锁定
     app = models.CharField(verbose_name='来源', max_length=255, default='')
     last_get = models.IntegerField(verbose_name='上次获取的时间戳', default=0)
+    status = models.IntegerField(verbose_name='注册 ins 状态', default=0)
+    created = models.CharField(verbose_name='邮箱数据入库时间', max_length=255, default='')
 
     class Meta:
         verbose_name = '网易邮箱'

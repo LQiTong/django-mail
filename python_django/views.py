@@ -44,7 +44,7 @@ try:
     '''
 
 
-    @register_job(scheduler, "interval", seconds=1, id="task_time", replace_existing=True)
+    @register_job(scheduler, "interval", seconds=1, id="task_time", replace_existing=True, max_instances=5)
     def refresh_mail_flag():
         # 定义定时任务
         # 定时每 30 秒执行一次
@@ -58,11 +58,11 @@ try:
         # print(f'===================定时器执行完毕 {datetime.datetime.now()}===================')
 
 
-    @register_job(scheduler, "interval", minutes=30, id="task_login", replace_existing=True)
+    @register_job(scheduler, "interval", minutes=30, id="task_login", replace_existing=True, max_instances=5)
     def login():
         query_set = hotmail.objects.all().filter(flag=0)
         bulk = []
-        for item in query_set[:1000]:
+        for item in query_set[:200]:
             password = str(base64.b64decode(str(item.password)).decode())
             # print('password --> ', password)
             try:
@@ -76,6 +76,15 @@ try:
                 item.app = 'handle'
                 bulk.append(item)
         hotmail.objects.bulk_update(bulk, ['flag', 'app'])
+
+
+    @register_job(scheduler, "interval", seconds=30, id="task_update_status", replace_existing=True, max_instances=5)
+    def task_update_status():
+        end_time = int(calendar.timegm(time.gmtime())) - 900
+        start_time = int(calendar.timegm(time.gmtime())) - (30 * 24 * 60 * 60)
+        query_set = hotmail.objects.all().filter(flag=1, status=0, created__istartswith='2022',
+                                                 last_get__range=(start_time, end_time))
+        query_set.update(flag=0)
 
 
     # 监控任务
@@ -105,6 +114,30 @@ def dashboard(request):
     _serializer2 = HotMailSerializer(mail2, many=True)
     context = {"mail1": len(_serializer1.data), "mail2": len(_serializer2.data)}
     return render(request, 'mail/dashboard.html', context)
+
+
+def sign_status(request):
+    context = {"total": 0, "charge": 0, "success": 0, "failed": 0}
+    return render(request, 'mail/mail.html', context)
+
+
+@api_view(['POST'])
+def get_mail_status(request):
+    created = request.POST.get('created')
+    total = hotmail.objects.all().filter(created__istartswith=created)
+    charge = total.filter(status=0)
+    success = total.filter(status=1)
+    failed = total.filter(status=2)
+    total_serializer = HotMailSerializer(total, many=True)
+    charge_serializer = HotMailSerializer(charge, many=True)
+    success_serializer = HotMailSerializer(success, many=True)
+    failed_serializer = HotMailSerializer(failed, many=True)
+    print('created --> ', created)
+    context = {"total": len(total_serializer.data), "charge": len(charge_serializer.data),
+               "success": len(success_serializer.data),
+               "failed": len(failed_serializer.data)}
+
+    return render(request, 'mail/mail.html', context)
 
 
 def jud_mail(serializer_data):
@@ -239,18 +272,33 @@ def update_mail(request):
     if request.method == 'GET':
         mail = request.query_params.get('mail', None)
         if mail is not None:
-            if '@outlook.com' in mail:
-                # outlook 邮箱
-                model = OutlookMail.objects.all().filter(mail=mail)
-                model.update(flag=2, app='handle')
-                print('{} 邮箱废弃处理成功！'.format(mail))
-                return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
-            elif '@hotmail.com' in mail:
-                # hotmail 邮箱
-                model = hotmail.objects.all().filter(mail=mail)
-                model.update(flag=2, app='handle')
-                print('{} 邮箱废弃处理成功！'.format(mail))
-                return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
+            query_status = request.query_params.get('status', None)
+            if query_status is not None:
+                if '@outlook.com' in mail:
+                    # outlook 邮箱
+                    model = OutlookMail.objects.all().filter(mail=mail)
+                    model.update(flag=2, app='handle', status=query_status)
+                    print('{} 邮箱废弃处理成功！'.format(mail), '注册成功' if int(query_status) == 1 else '邮箱无效')
+                    return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
+                elif '@hotmail.com' in mail:
+                    # hotmail 邮箱
+                    model = hotmail.objects.all().filter(mail=mail)
+                    model.update(flag=2, app='handle', status=query_status)
+                    print('{} 邮箱废弃处理成功！'.format(mail), '注册成功' if int(query_status) == 1 else '邮箱无效')
+                    return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
+            else:
+                if '@outlook.com' in mail:
+                    # outlook 邮箱
+                    model = OutlookMail.objects.all().filter(mail=mail)
+                    model.update(flag=2, app='handle')
+                    print('{} 邮箱废弃处理成功！'.format(mail), '注册成功' if int(query_status) == 1 else '邮箱无效')
+                    return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
+                elif '@hotmail.com' in mail:
+                    # hotmail 邮箱
+                    model = hotmail.objects.all().filter(mail=mail)
+                    model.update(flag=2, app='handle')
+                    print('{} 邮箱废弃处理成功！'.format(mail), '注册成功' if int(query_status) == 1 else '邮箱无效')
+                    return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
         else:
             return JsonResponse({'message': 'Parameter Error'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -271,7 +319,8 @@ def get_verify(request):
             ch_options.add_argument('--disable-dev-shm-usage')
             # 在启动浏览器时加入配置
             browser = webdriver.Chrome(options=ch_options)
-
+            # 最大化窗口
+            browser.maximize_window()
             # 获取此时的时间戳
             time_now = calendar.timegm(time.gmtime())
             try:

@@ -14,5 +14,7 @@ urlpatterns = [
     # update mail api
     path('update_mail/', views.update_mail, name='update_mail'),
     # get_verify api
-    path('get_verify/', views.get_verify, name='get_verify')
+    path('get_verify/', views.get_verify, name='get_verify'),
+    # get_mail_status
+    path('get_mail_status/', views.get_mail_status, name='get_mail_status')
 ]
