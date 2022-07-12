@@ -2,14 +2,17 @@
 {% block content %}
 <div class="jumbotron">
     <form method="post" action="/api/mail/get_mail_status/">
-        <input type="date" name="created" placeholder="请输入查询日期">
+        <input type="date" name="created" value="2022-07-08" style="width: 200px;" placeholder="请输入查询日期">
+        <input type="number" name="start" value="0" style="width: 200px;" max="24" min="0" placeholder="请输入开始时间">
+        <input type="number" name="end" value="24" style="width: 200px;" max="24" min="0" placeholder="请输入结束时间">
         <input type="submit" value="查询">
     </form>
 </div>
 <div class="jumbotron" >
-    <p style="color: darkred; font-weight: bolder;">查询结果</p>
+    <p style="color: darkred; font-weight: bolder;">查询结果（<span>入库时间范围：{{ startTime }} --- {{ endTime }}</span>）</p>
     <p>总邮箱数量：{{ total }}</p>
     <p>未使用邮箱：{{ charge }}</p>
+    <p>自动死亡数：{{ death }}</p>
     <p>注册成功数：<span style="color: red; font-weight:bolder;">{{ success }}</span></p>
     <p>注册失败数：<span style="font-weight:bolder;">{{ failed }}</span></p>
 </div>

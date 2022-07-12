@@ -1,6 +1,7 @@
 import base64
 import calendar
 import time
+from datetime import datetime
 
 from django.shortcuts import render
 from apscheduler.schedulers.background import BackgroundScheduler  # 使用它可以让你的定时任务在后台运行
@@ -44,7 +45,7 @@ try:
     '''
 
 
-    @register_job(scheduler, "interval", seconds=1, id="task_time", replace_existing=True, max_instances=5)
+    @register_job(scheduler, "interval", seconds=86400, id="task_time", replace_existing=True, max_instances=100)
     def refresh_mail_flag():
         # 定义定时任务
         # 定时每 30 秒执行一次
@@ -58,7 +59,7 @@ try:
         # print(f'===================定时器执行完毕 {datetime.datetime.now()}===================')
 
 
-    @register_job(scheduler, "interval", minutes=30, id="task_login", replace_existing=True, max_instances=5)
+    @register_job(scheduler, "interval", minutes=30, id="task_login", replace_existing=True, max_instances=100)
     def login():
         query_set = hotmail.objects.all().filter(flag=0)
         bulk = []
@@ -78,7 +79,7 @@ try:
         hotmail.objects.bulk_update(bulk, ['flag', 'app'])
 
 
-    @register_job(scheduler, "interval", seconds=30, id="task_update_status", replace_existing=True, max_instances=5)
+    @register_job(scheduler, "interval", seconds=86400, id="task_update_status", replace_existing=True, max_instances=100)
     def task_update_status():
         end_time = int(calendar.timegm(time.gmtime())) - 900
         start_time = int(calendar.timegm(time.gmtime())) - (30 * 24 * 60 * 60)
@@ -117,25 +118,49 @@ def dashboard(request):
 
 
 def sign_status(request):
-    context = {"total": 0, "charge": 0, "success": 0, "failed": 0}
+    context = {"total": 0, "charge": 0, "success": 0, "failed": 0, "death": 0}
     return render(request, 'mail/mail.html', context)
 
 
 @api_view(['POST'])
 def get_mail_status(request):
     created = request.POST.get('created')
-    total = hotmail.objects.all().filter(created__istartswith=created)
+    start = request.POST.get('start')
+    end = request.POST.get('end')
+    if start:
+        start = start if int(start) >= 10 else '0' + start
+        start_time = start + ':00:00'
+        start_time_stamp = int((datetime.strptime(created + ' ' + start_time, '%Y-%m-%d %H:%M:%S')).timestamp()) * 1000
+    if end:
+        end = end if int(end) >= 10 else '0' + end
+        end_time = end + ':00:00' if int(end) != 24 else '23:59:59'
+        end_time_stamp = int((datetime.strptime(created + ' ' + end_time, '%Y-%m-%d %H:%M:%S')).timestamp()) * 1000
+
+    if start and end:
+        startTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(start_time_stamp/1000)))
+        endTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(end_time_stamp/1000)))
+        if int(start) > int(end):
+            return HttpResponse('结束时间需要大于开始时间')
+
+        total = hotmail.objects.all().filter(created__range=(start_time_stamp, end_time_stamp))
+    else:
+        st = int((datetime.strptime(created + ' 00:00:00', '%Y-%m-%d %H:%M:%S')).timestamp()) * 1000
+        et = int((datetime.strptime(created + ' 23:59:59', '%Y-%m-%d %H:%M:%S')).timestamp()) * 1000
+        startTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(st/1000)))
+        endTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(et/1000)))
+        total = hotmail.objects.all().filter(created__range=(st, et))
     charge = total.filter(status=0)
     success = total.filter(status=1)
     failed = total.filter(status=2)
+    death = total.filter(status=0, flag=2)
     total_serializer = HotMailSerializer(total, many=True)
     charge_serializer = HotMailSerializer(charge, many=True)
     success_serializer = HotMailSerializer(success, many=True)
     failed_serializer = HotMailSerializer(failed, many=True)
-    print('created --> ', created)
+    death_serializer = HotMailSerializer(death, many=True)
     context = {"total": len(total_serializer.data), "charge": len(charge_serializer.data),
                "success": len(success_serializer.data),
-               "failed": len(failed_serializer.data)}
+               "failed": len(failed_serializer.data), "death": len(death_serializer.data), "startTime": startTime, "endTime": endTime}
 
     return render(request, 'mail/mail.html', context)
 

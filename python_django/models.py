@@ -12,7 +12,7 @@ class OutlookMail(models.Model):
     app = models.CharField(verbose_name='来源', max_length=255, default='')
     last_get = models.IntegerField(verbose_name='上次获取的时间戳', default=0)
     status = models.IntegerField(verbose_name='注册 ins 状态', default=0)
-    created = models.CharField(verbose_name='邮箱数据入库时间', max_length=255, default='')
+    created = models.IntegerField(verbose_name='邮箱数据入库时间', default=0)
 
     class Meta:
         verbose_name = '微软邮箱'
@@ -30,7 +30,7 @@ class hotmail(models.Model):
     app = models.CharField(verbose_name='来源', max_length=255, default='')
     last_get = models.IntegerField(verbose_name='上次获取的时间戳', default=0)
     status = models.IntegerField(verbose_name='注册 ins 状态', default=0)
-    created = models.CharField(verbose_name='邮箱数据入库时间', max_length=255, default='')
+    created = models.IntegerField(verbose_name='邮箱数据入库时间', default=0)
 
     class Meta:
         verbose_name = '微软邮箱'
@@ -48,7 +48,7 @@ class gmail(models.Model):
     app = models.CharField(verbose_name='来源', max_length=255, default='')
     last_get = models.IntegerField(verbose_name='上次获取的时间戳', default=0)
     status = models.IntegerField(verbose_name='注册 ins 状态', default=0)
-    created = models.CharField(verbose_name='邮箱数据入库时间', max_length=255, default='')
+    created = models.IntegerField(verbose_name='邮箱数据入库时间', default=0)
 
     class Meta:
         verbose_name = '谷歌邮箱'
@@ -66,7 +66,7 @@ class net163(models.Model):
     app = models.CharField(verbose_name='来源', max_length=255, default='')
     last_get = models.IntegerField(verbose_name='上次获取的时间戳', default=0)
     status = models.IntegerField(verbose_name='注册 ins 状态', default=0)
-    created = models.CharField(verbose_name='邮箱数据入库时间', max_length=255, default='')
+    created = models.IntegerField(verbose_name='邮箱数据入库时间', default=0)
 
     class Meta:
         verbose_name = '网易邮箱'
