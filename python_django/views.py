@@ -45,7 +45,7 @@ try:
     '''
 
 
-    @register_job(scheduler, "interval", seconds=86400, id="task_time", replace_existing=True, max_instances=100)
+    @register_job(scheduler, "interval", seconds=3600, id="task_time", replace_existing=True, max_instances=100)
     def refresh_mail_flag():
         # 定义定时任务
         # 定时每 30 秒执行一次
@@ -79,9 +79,9 @@ try:
         hotmail.objects.bulk_update(bulk, ['flag', 'app'])
 
 
-    @register_job(scheduler, "interval", seconds=86400, id="task_update_status", replace_existing=True, max_instances=100)
+    @register_job(scheduler, "interval", seconds=3600, id="task_update_status", replace_existing=True, max_instances=100)
     def task_update_status():
-        end_time = int(calendar.timegm(time.gmtime())) - 900
+        end_time = int(calendar.timegm(time.gmtime())) - 300
         start_time = int(calendar.timegm(time.gmtime())) - (30 * 24 * 60 * 60)
         query_set = hotmail.objects.all().filter(flag=1, status=0, created__istartswith='2022',
                                                  last_get__range=(start_time, end_time))
@@ -149,7 +149,7 @@ def get_mail_status(request):
         startTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(st/1000)))
         endTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(et/1000)))
         total = hotmail.objects.all().filter(created__range=(st, et))
-    charge = total.filter(status=0)
+    charge = total.filter(status=0, flag=0)
     success = total.filter(status=1)
     failed = total.filter(status=2)
     death = total.filter(status=0, flag=2)
@@ -290,6 +290,23 @@ def get_code(request):
                     return JsonResponse({'message': '{} 邮箱登陆失败，请稍后再试！'.format(mail)}, status=status.HTTP_200_OK)
         except OutlookMail.DoesNotExist:
             return JsonResponse({'message': '无对应邮箱数据，请检查邮箱'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_verify_code(request):
+    if request.method == 'GET':
+        mail = request.query_params.get('mail', None)
+        password = request.query_params.get('password', None)
+        if not mail or not password:
+            return JsonResponse({'message': 'Parameter Error'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            resp = mail_operation(mail, password, app='auto')
+            return JsonResponse(resp, status=status.HTTP_200_OK)
+        except Exception as err:
+            print('login err --> ', err)
+            query_set = hotmail.objects.all().filter(mail=mail)
+            query_set.update(flag=2, app='auto')
+            return JsonResponse({'message': '{} 邮箱登陆失败，请稍后再试！'.format(mail)}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
