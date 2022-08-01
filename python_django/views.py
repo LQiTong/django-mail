@@ -16,6 +16,7 @@ from python_django.rest_api.serializers import OutlookSerializer, HotMailSeriali
 from python_django.src.outlook_services import Outlook
 from python_django.utils.get_password_decode import getPassword
 from python_django.utils.mail_operation import mail_operation
+import threading
 # 导入网页驱动软件
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -79,7 +80,8 @@ try:
         hotmail.objects.bulk_update(bulk, ['flag', 'app'])
 
 
-    @register_job(scheduler, "interval", seconds=3600, id="task_update_status", replace_existing=True, max_instances=100)
+    @register_job(scheduler, "interval", seconds=3600, id="task_update_status", replace_existing=True,
+                  max_instances=100)
     def task_update_status():
         end_time = int(calendar.timegm(time.gmtime())) - 300
         start_time = int(calendar.timegm(time.gmtime())) - (30 * 24 * 60 * 60)
@@ -137,8 +139,8 @@ def get_mail_status(request):
         end_time_stamp = int((datetime.strptime(created + ' ' + end_time, '%Y-%m-%d %H:%M:%S')).timestamp()) * 1000
 
     if start and end:
-        startTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(start_time_stamp/1000)))
-        endTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(end_time_stamp/1000)))
+        startTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(start_time_stamp / 1000)))
+        endTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(end_time_stamp / 1000)))
         if int(start) > int(end):
             return HttpResponse('结束时间需要大于开始时间')
 
@@ -146,8 +148,8 @@ def get_mail_status(request):
     else:
         st = int((datetime.strptime(created + ' 00:00:00', '%Y-%m-%d %H:%M:%S')).timestamp()) * 1000
         et = int((datetime.strptime(created + ' 23:59:59', '%Y-%m-%d %H:%M:%S')).timestamp()) * 1000
-        startTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(st/1000)))
-        endTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(et/1000)))
+        startTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(st / 1000)))
+        endTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(et / 1000)))
         total = hotmail.objects.all().filter(created__range=(st, et))
     charge = total.filter(status=0, flag=0)
     success = total.filter(status=1)
@@ -160,7 +162,8 @@ def get_mail_status(request):
     death_serializer = HotMailSerializer(death, many=True)
     context = {"total": len(total_serializer.data), "charge": len(charge_serializer.data),
                "success": len(success_serializer.data),
-               "failed": len(failed_serializer.data), "death": len(death_serializer.data), "startTime": startTime, "endTime": endTime}
+               "failed": len(failed_serializer.data), "death": len(death_serializer.data), "startTime": startTime,
+               "endTime": endTime}
 
     return render(request, 'mail/mail.html', context)
 
@@ -173,60 +176,46 @@ def jud_mail(serializer_data):
 
         if timestamp is not None:
             time_gap = int(time_now) - int(timestamp)
-            if '@outlook.com' in mail:
-                # 如果大于等于 5 分钟，那么该邮箱可用
-                if time_gap >= 300:
-                    model = OutlookMail.objects.all().filter(mail=mail)
-                    model.update(last_get=str(time_now))
-                    return JsonResponse(serializer_data, safe=False)
-                else:
-                    model = OutlookMail.objects.all().filter(mail=mail)
-                    model.update(flag=3, last_get=str(time_now))
-                    outlook = OutlookMail.objects.all().filter(flag=0)[:1]
-                    outlook_serializer = OutlookSerializer(outlook, many=True)
-                    return jud_mail(outlook_serializer.data)
-            elif '@hotmail.com' in mail:
-                # 如果大于等于 5 分钟，那么该邮箱可用
-                if time_gap >= 300:
-                    model = hotmail.objects.all().filter(mail=mail)
-                    model.update(last_get=str(time_now))
-                    return JsonResponse(serializer_data, safe=False)
-                else:
-                    model = hotmail.objects.all().filter(mail=mail)
-                    model.update(flag=3, last_get=str(time_now))
-                    hot = hotmail.objects.all().filter(flag=0)[:1]
-                    hot_serializer = HotMailSerializer(hot, many=True)
-                    return jud_mail(hot_serializer.data)
-        else:
-            if '@outlook.com' in mail:
-                model = OutlookMail.objects.all().filter(mail=mail)
-                model.update(last_get=str(time_now))
-                return JsonResponse(serializer_data, safe=False)
-            elif '@hotmail.com' in mail:
+            # 如果大于等于 5 分钟，那么该邮箱可用
+            if time_gap >= 300:
                 model = hotmail.objects.all().filter(mail=mail)
                 model.update(last_get=str(time_now))
                 return JsonResponse(serializer_data, safe=False)
+            else:
+                model = hotmail.objects.all().filter(mail=mail)
+                model.update(flag=3, last_get=str(time_now))
+                hot = hotmail.objects.all().filter(flag=0)[:1]
+                hot_serializer = HotMailSerializer(hot, many=True)
+                return jud_mail(hot_serializer.data)
+        else:
+            model = hotmail.objects.all().filter(mail=mail)
+            model.update(last_get=str(time_now))
+            return JsonResponse(serializer_data, safe=False)
     else:
         return JsonResponse(serializer_data, safe=False)
 
 
-def get_mails(data, count):
-    if len(data) != 0:
-        # 获取 count 数量的邮箱并且标上标记
-        querySet = hotmail.objects.all().filter(flag=0)
+def get_mails(count):
+    # 获取 count 数量的邮箱并且标上标记
+    querySet = hotmail.objects.all().filter(flag=0)
 
-        _hot_serializer = HotMailSerializer(querySet[:int(count)], many=True)
-        time_now = calendar.timegm(time.gmtime())
-        bulk = []
-        for item in querySet[:int(count)]:
-            item.flag = 3
-            item.last_get = time_now
-            bulk.append(item)
-        hotmail.objects.bulk_update(bulk, ['flag', 'last_get'])
+    _hot_serializer = HotMailSerializer(querySet[:int(count)], many=True)
+    bulk_train = threading.Thread(target=bulkThread, args=('hotmail', count))
+    bulk_train.start()
+    return JsonResponse(_hot_serializer.data, safe=False)
 
-        return JsonResponse(_hot_serializer.data, safe=False)
-    else:
-        return JsonResponse(data, safe=False)
+
+def bulkThread(data, count):
+    querySet = hotmail.objects.all().filter(flag=0)
+    time_now = calendar.timegm(time.gmtime())
+    bulk = []
+    print('bulkThread data', data)
+    print('bulkThread count', count)
+    for item in querySet[:int(count)]:
+        item.flag = 3
+        item.last_get = time_now
+        bulk.append(item)
+    hotmail.objects.bulk_update(bulk, ['flag', 'last_get'])
 
 
 @api_view(['GET'])
@@ -234,32 +223,23 @@ def outlook_list(request):
     if request.method == 'GET':
         count = request.query_params.get('count', None)
         if count is None:
-            # 需求：需要一个未使用过的邮箱
-            outlook = OutlookMail.objects.all().filter(flag=0)[:1]
-            # print('outlook --> ', outlook)
+            hot_mail = hotmail.objects.all().filter(flag=0)[:1]
+            # print('hotmail --> ', hot_mail)
 
-            outlook_serializer = OutlookSerializer(outlook, many=True)
-            if len(outlook_serializer.data) != 0:
-                return jud_mail(outlook_serializer.data)
-                # 'safe=False' for objects serialization
+            hot_mail_serializer = HotMailSerializer(hot_mail, many=True)
+            if len(hot_mail_serializer.data) != 0:
+                return jud_mail(hot_mail_serializer.data)
             else:
-                hot_mail = hotmail.objects.all().filter(flag=0)[:1]
-                # print('hotmail --> ', hot_mail)
-
-                hot_mail_serializer = HotMailSerializer(hot_mail, many=True)
-                if len(hot_mail_serializer.data) != 0:
-                    return jud_mail(hot_mail_serializer.data)
-                else:
-                    return JsonResponse(hot_mail_serializer.data, safe=False)
-                # return JsonResponse(hot_mail_serializer.data, safe=False)
-                # 'safe=False' for objects serialization
+                return JsonResponse(hot_mail_serializer.data, safe=False)
+            # return JsonResponse(hot_mail_serializer.data, safe=False)
+            # 'safe=False' for objects serialization
         else:
             # 需求，需要 count 数量的可用邮箱
             if str(count).isdigit():
                 mailByCount = hotmail.objects.all().filter(flag=0)
                 mail_serializer = HotMailSerializer(mailByCount, many=True)
                 if len(mail_serializer.data) != 0:
-                    return get_mails(mail_serializer.data, count)
+                    return get_mails(count)
                 else:
                     return JsonResponse(mail_serializer.data, safe=False)
             else:
@@ -280,14 +260,9 @@ def get_code(request):
                 return JsonResponse(response, status=status.HTTP_200_OK)
 
             except Exception as err:
-                if '@outlook.com' in mail:
-                    model = OutlookMail.objects.all().filter(mail=mail)
-                    model.update(flag=2, app=app)
-                    return JsonResponse({'message': '{} 邮箱登陆失败，请稍后再试！'.format(mail)}, status=status.HTTP_200_OK)
-                elif '@hotmail.com' in mail:
-                    model = hotmail.objects.all().filter(mail=mail)
-                    model.update(flag=2, app=app)
-                    return JsonResponse({'message': '{} 邮箱登陆失败，请稍后再试！'.format(mail)}, status=status.HTTP_200_OK)
+                model = hotmail.objects.all().filter(mail=mail)
+                model.update(flag=2, app=app)
+                return JsonResponse({'message': '{} 邮箱登陆失败，请稍后再试！'.format(mail)}, status=status.HTTP_200_OK)
         except OutlookMail.DoesNotExist:
             return JsonResponse({'message': '无对应邮箱数据，请检查邮箱'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -316,31 +291,16 @@ def update_mail(request):
         if mail is not None:
             query_status = request.query_params.get('status', None)
             if query_status is not None:
-                if '@outlook.com' in mail:
-                    # outlook 邮箱
-                    model = OutlookMail.objects.all().filter(mail=mail)
-                    model.update(flag=2, app='handle', status=query_status)
-                    print('{} 邮箱废弃处理成功！'.format(mail), '注册成功' if int(query_status) == 1 else '邮箱无效')
-                    return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
-                elif '@hotmail.com' in mail:
-                    # hotmail 邮箱
-                    model = hotmail.objects.all().filter(mail=mail)
-                    model.update(flag=2, app='handle', status=query_status)
-                    print('{} 邮箱废弃处理成功！'.format(mail), '注册成功' if int(query_status) == 1 else '邮箱无效')
-                    return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
+                # hotmail 邮箱
+                model = hotmail.objects.all().filter(mail=mail)
+                model.update(flag=2, app='handle', status=query_status)
+                print('{} 邮箱废弃处理成功！'.format(mail), '注册成功' if int(query_status) == 1 else '邮箱无效')
+                return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
             else:
-                if '@outlook.com' in mail:
-                    # outlook 邮箱
-                    model = OutlookMail.objects.all().filter(mail=mail)
-                    model.update(flag=2, app='handle')
-                    print('{} 邮箱废弃处理成功！'.format(mail), '注册成功' if int(query_status) == 1 else '邮箱无效')
-                    return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
-                elif '@hotmail.com' in mail:
-                    # hotmail 邮箱
-                    model = hotmail.objects.all().filter(mail=mail)
-                    model.update(flag=2, app='handle')
-                    print('{} 邮箱废弃处理成功！'.format(mail), '注册成功' if int(query_status) == 1 else '邮箱无效')
-                    return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
+                model = hotmail.objects.all().filter(mail=mail)
+                model.update(flag=2, app='handle')
+                print('{} 邮箱废弃处理成功！'.format(mail), '注册成功' if int(query_status) == 1 else '邮箱无效')
+                return JsonResponse({'message': '{} 邮箱废弃处理成功！'.format(mail)})
         else:
             return JsonResponse({'message': 'Parameter Error'}, status=status.HTTP_400_BAD_REQUEST)
 

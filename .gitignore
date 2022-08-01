@@ -3,4 +3,4 @@ venv/
 __pycache__/
 python_django/__pycache__/
 django_mail/__pycache__/
-
+/logs
